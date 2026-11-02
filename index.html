@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WILDA — The Ocean of Love 💙</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js & GSAP for 3D & Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ocean: {
+                            900: '#030b1e',
+                            800: '#071638',
+                            700: '#0d2557',
+                            600: '#14387d',
+                        },
+                        electric: '#00f0ff',
+                        cyanGlow: '#00ffff',
+                        turquoise: '#00e1d9',
+                        aurora: '#7928ca',
+                    },
+                    fontFamily: {
+                        outfit: ['Outfit', 'sans-serif'],
+                        playfair: ['Playfair Display', 'serif'],
+                        caveat: ['Caveat', 'cursive'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #030b1e;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .font-title { font-family: 'Playfair Display', serif; }
+        .font-hand { font-family: 'Caveat', cursive; }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(7, 22, 56, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .glass-card {
+            background: rgba(13, 37, 87, 0.45);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 225, 217, 0.15);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #030b1e; }
+        ::-webkit-scrollbar-thumb { background: #14387d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+
+        /* Glowing text & effects */
+        .glow-text {
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.6), 0 0 40px rgba(0, 240, 255, 0.3);
+        }
+        .glow-box {
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
+        }
+        .glow-box:hover {
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.45);
+        }
+
+        /* Aurora background animation */
+        @keyframes auroraWave {
+            0% { transform: translateY(0) scale(1); opacity: 0.4; }
+            50% { transform: translateY(-20px) scale(1.05); opacity: 0.7; }
+            100% { transform: translateY(0) scale(1); opacity: 0.4; }
+        }
+        .aurora-bg {
+            background: radial-gradient(circle at 50% 20%, rgba(121, 40, 202, 0.25) 0%, rgba(0, 240, 255, 0.15) 40%, transparent 70%);
+            animation: auroraWave 10s ease-in-out infinite;
+        }
+
+        /* Floating Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(1deg); }
+        }
+        .floating { animation: float 6s ease-in-out infinite; }
+
+        /* Bubble animation */
+        @keyframes riseBubble {
+            0% { transform: translateY(100vh) scale(0.8); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+        }
+        .bubble {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(0, 240, 255, 0.2));
+            border-radius: 50%;
+            pointer-events: none;
+            animation: riseBubble linear infinite;
+        }
+
+        /* Canvas container */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="relative min-h-screen text-slate-100 selection:bg-electric selection:text-ocean-900">
+
+    <!-- WebGL 3D & Particle Background -->
+    <div id="webgl-container"></div>
+
+    <!-- Background Bubbles Generator -->
+    <div id="bubbles-container" class="fixed inset-0 overflow-hidden pointer-events-none z-0"></div>
+
+    <!-- Audio Player Widget -->
+    <div class="fixed top-6 right-6 z-50 flex items-center gap-3 glass px-4 py-2 rounded-full glow-box">
+        <button id="audio-toggle" class="w-10 h-10 rounded-full bg-electric/20 border border-electric/40 flex items-center justify-center text-electric hover:bg-electric/30 transition-all">
+            <svg id="audio-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+            </svg>
+        </button>
+        <div class="hidden sm:block text-xs font-medium">
+            <p class="text-electric">Ocean Melody</p>
+            <p class="text-slate-400 font-hand text-sm">Musik Romantis Kazu</p>
+        </div>
+        <audio id="bg-audio" loop src="musik.mp3" preload="auto"></audio>
+    </div>
+
+    <!-- 1. OPENING CINEMATIC SCREEN -->
+    <section id="cinematic-screen" class="fixed inset-0 z-40 bg-ocean-900 flex flex-col items-center justify-center text-center px-6 transition-opacity duration-1000">
+        <div class="aurora-bg absolute inset-0 pointer-events-none"></div>
+        <div class="relative z-10 max-w-2xl mx-auto space-y-6">
+            <div class="inline-block px-4 py-1.5 rounded-full glass border border-electric/30 text-electric text-sm font-medium tracking-widest uppercase mb-2">
+                A Special Romantic Experience
+            </div>
+            <h1 class="font-title text-4xl sm:text-6xl font-bold glow-text tracking-wide">
+                WILDA — THE OCEAN OF LOVE 💙
+            </h1>
+            <p class="text-slate-300 text-lg sm:text-xl font-light italic max-w-lg mx-auto">
+                "Di antara luasnya lautan, ada satu nama yang masih Kazu simpan..."
+            </p>
+            <div class="pt-6">
+                <button id="start-btn" class="group relative px-8 py-4 bg-gradient-to-r from-electric to-turquoise text-ocean-900 font-bold rounded-full shadow-lg hover:shadow-electric/50 transition-all duration-300 transform hover:scale-105">
+                    <span class="relative z-10 flex items-center gap-2 text-lg">
+                        MULAI PETUALANGAN ❤️
+                    </span>
+                    <div class="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-25 transition-opacity"></div>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 pt-4">Dibuat penuh cinta oleh Kazu untuk Wilda</p>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main id="main-content" class="opacity-0 transition-opacity duration-1000 relative z-10 pointer-events-none">
+        
+        <!-- HERO / 3D INTRO SECTION -->
+        <header class="min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20 relative">
+            <div class="max-w-3xl mx-auto space-y-6 pointer-events-auto">
+                <span class="text-electric font-hand text-2xl">Somewhere in this endless ocean...</span>
+                <h2 class="font-title text-5xl sm:text-7xl font-bold glow-text">
+                    My favorite light is still you.
+                </h2>
+                <p class="text-slate-300 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+                    Jelajahi samudera penuh kenangan, temukan mutiara rahasia, dan rasakan ketulusan hati yang Kazu persembahkan khusus untukmu.
+                </p>
+                <div class="pt-8 flex justify-center gap-4">
+                    <a href="#letter-section" class="px-6 py-3 rounded-full glass border border-electric/40 text-electric hover:bg-electric/10 transition-all font-medium text-sm">
+                        Buka Surat Cinta 💌
+                    </a>
+                    <a href="#gallery-section" class="px-6 py-3 rounded-full bg-ocean-700/60 border border-turquoise/30 text-turquoise hover:bg-ocean-600 transition-all font-medium text-sm">
+                        Lihat Galeri 📸
+                    </a>
+                </div>
+            </div>
+            <div class="absolute bottom-10 animate-bounce">
+                <svg class="w-6 h-6 text-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+            </div>
+        </header>
+
+        <!-- 7. SURAT UNTUK WILDA -->
+        <section id="letter-section" class="py-24 px-6 pointer-events-auto">
+            <div class="max-w-3xl mx-auto">
+                <div class="text-center mb-12">
+                    <span class="text-electric text-sm tracking-widest uppercase font-semibold">Pesan Khusus</span>
+                    <h3 class="font-title text-3xl sm:text-4xl font-bold mt-2">Surat untuk Wilda</h3>
+                </div>
+                
+                <!-- Glass Envelope Container -->
+                <div class="glass rounded-3xl p-8 sm:p-12 relative overflow-hidden glow-box">
+                    <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-electric/10 rounded-full blur-2xl pointer-events-none"></div>
+                    
+                    <div id="envelope-cover" class="text-center py-12 cursor-pointer transition-all duration-500">
+                        <div class="w-24 h-24 mx-auto mb-6 rounded-full glass border-2 border-electric flex items-center justify-center text-electric text-4xl floating">
+                            ✉️
+                        </div>
+                        <h4 class="font-title text-2xl font-bold mb-2">Amplop Kaca Misterius</h4>
+                        <p class="text-slate-400 text-sm mb-6">Klik di sini untuk membuka surat dari Kazu untukmu.</p>
+                        <button onclick="openLetter()" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-electric to-turquoise text-ocean-900 font-bold text-sm shadow-lg hover:opacity-90 transition-all">
+                            Buka Amplop 💙
+                        </button>
+                    </div>
+
+                    <div id="letter-content" class="hidden opacity-0 transition-opacity duration-700 space-y-6">
+                        <div class="flex items-center justify-between border-b border-electric/20 pb-4">
+                            <span class="text-electric font-hand text-2xl">Untuk Wilda tersayang,</span>
+                            <span class="text-xs text-slate-400">Dari Kazu</span>
+                        </div>
+                        <div class="font-hand text-2xl sm:text-3xl text-slate-200 leading-relaxed space-y-4">
+                            <p>"Hai Wilda...</p>
+                            <p>Mungkin ada banyak hal yang belum sempat Kazu sampaikan.</p>
+                            <p>Ada cerita yang belum selesai, ada kenangan yang masih tersimpan, dan ada perasaan yang belum sepenuhnya hilang.</p>
+                            <p>Kazu sadar bahwa tidak semua hal bisa kembali seperti dulu.</p>
+                            <p>Namun, Kazu ingin belajar menjadi seseorang yang lebih baik.</p>
+                            <p>Website kecil ini Kazu buat bukan untuk memaksamu, tetapi untuk menyampaikan sesuatu yang mungkin belum sempat Kazu katakan."</p>
+                        </div>
+                        <div class="pt-6 text-right border-t border-electric/20">
+                            <p class="font-hand text-2xl text-electric">Selalu menghargaimu,</p>
+                            <p class="font-bold text-slate-300">Kazu</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. GALERI 3 FOTO -->
+        <section id="gallery-section" class="py-24 px-6 pointer-events-auto">
+            <div class="max-w-5xl mx-auto">
+                <div class="text-center mb-16">
+                    <span class="text-electric text-sm tracking-widest uppercase font-semibold">Kenangan Indah</span>
+                    <h3 class="font-title text-3xl sm:text-4xl font-bold mt-2">Galeri Samudera</h3>
+                    <p class="text-slate-400 text-sm mt-2">Klik foto untuk melihat dalam ukuran penuh.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Photo 1 -->
+                    <div class="glass rounded-2xl p-4 glow-box floating transition-transform duration-300 hover:-translate-y-2 cursor-pointer" onclick="openModal('foto1.jpg', 'Senyuman yang paling menenangkan di tengah hari-hari yang sibuk.')">
+                        <div class="h-64 rounded-xl overflow-hidden relative mb-4">
+                            <img src="foto1.jpg" alt="Kenangan 1" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" onerror="this.src='https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=600&q=80'">
+                            <div class="absolute inset-0 bg-gradient-to-t from-ocean-900/80 via-transparent to-transparent"></div>
+                        </div>
+                        <h4 class="font-title font-bold text-lg text-electric">Momen Pertama</h4>
+                        <p class="text-slate-300 text-sm mt-1">Senyuman yang paling menenangkan di tengah hari-hari yang sibuk.</p>
+                    </div>
+
+                    <!-- Photo 2 -->
+                    <div class="glass rounded-2xl p-4 glow-box floating transition-transform duration-300 hover:-translate-y-2 cursor-pointer" style="animation-delay: 2s;" onclick="openModal('foto2.jpg', 'Perjalanan dan tawa kecil yang membuat waktu terasa begitu berharga.')">
+                        <div class="h-64 rounded-xl overflow-hidden relative mb-4">
+                            <img src="foto2.jpg" alt="Kenangan 2" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" onerror="this.src='https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80'">
+                            <div class="absolute inset-0 bg-gradient-to-t from-ocean-900/80 via-transparent to-transparent"></div>
+                        </div>
+                        <h4 class="font-title font-bold text-lg text-electric">Cerita Kita</h4>
+                        <p class="text-slate-300 text-sm mt-1">Perjalanan dan tawa kecil yang membuat waktu terasa begitu berharga.</p>
+                    </div>
+
+                    <!-- Photo 3 -->
+                    <div class="glass rounded-2xl p-4 glow-box floating transition-transform duration-300 hover:-translate-y-2 cursor-pointer" style="animation-delay: 4s;" onclick="openModal('foto3.jpg', 'Harapan sederhana agar kebahagiaan selalu menyertai langkahmu.')">
+                        <div class="h-64 rounded-xl overflow-hidden relative mb-4">
+                            <img src="foto3.jpg" alt="Kenangan 3" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110" onerror="this.src='https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=600&q=80'">
+                            <div class="absolute inset-0 bg-gradient-to-t from-ocean-900/80 via-transparent to-transparent"></div>
+                        </div>
+                        <h4 class="font-title font-bold text-lg text-electric">Bintang Kejora</h4>
+                        <p class="text-slate-300 text-sm mt-1">Harapan sederhana agar kebahagiaan selalu menyertai langkahmu.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 9. GAME TEBAK-TEBAKAN ("Seberapa Peka Kamu?") -->
+        <section class="py-24 px-6 pointer-events-auto">
+            <div class="max-w-2xl mx-auto">
+                <div class="text-center mb-12">
+                    <span class="text-electric text-sm tracking-widest uppercase font-semibold">Mini Game Interaktif</span>
+                    <h3 class="font-title text-3xl sm:text-4xl font-bold mt-2">Seberapa Peka Kamu?</h3>
+                    <p class="text-slate-400 text-sm mt-2">Jawab 5 pertanyaan ringan dari Kazu.</p>
+                </div>
+
+                <div id="quiz-card" class="glass rounded-3xl p-8 sm:p-10 glow-box relative">
+                    <div id="quiz-container">
+                        <!-- Quiz dynamic content injected via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 10. GAME KARTU MISTERI -->
+        <section class="py-24 px-6 pointer-events-auto">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12">
+                    <span class="text-electric text-sm tracking-widest uppercase font-semibold">Pesan Tersembunyi</span>
+                    <h3 class="font-title text-3xl sm:text-4xl font-bold mt-2">Kartu Misteri Samudera</h3>
+                    <p class="text-slate-400 text-sm mt-2">Klik kartu untuk membalik dan membaca pesannya.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Card 1 -->
+                    <div class="perspective-1000 h-64 cursor-pointer" onclick="flipCard(this)">
+                        <div class="card-inner relative w-full h-full duration-500 transform-style-3d rounded-2xl glass p-6 flex flex-col items-center justify-center text-center glow-box">
+                            <div class="card-front absolute inset-0 flex flex-col items-center justify-center p-6">
+                                <span class="text-4xl mb-3">🐚</span>
+                                <h4 class="font-title font-bold text-lg text-electric">Kartu 1</h4>
+                                <p class="text-xs text-slate-400 mt-2">Klik untuk membalik</p>
+                            </div>
+                            <div class="card-back absolute inset-0 flex flex-col items-center justify-center p-6 bg-ocean-800/90 rounded-2xl border border-electric/40 hidden">
+                                <p class="font-hand text-xl text-electric">"Kadang kenangan sederhana justru menjadi yang paling berharga."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="perspective-1000 h-64 cursor-pointer" onclick="flipCard(this)">
+                        <div class="card-inner relative w-full h-full duration-500 transform-style-3d rounded-2xl glass p-6 flex flex-col items-center justify-center text-center glow-box">
+                            <div class="card-front absolute inset-0 flex flex-col items-center justify-center p-6">
+                                <span class="text-4xl mb-3">⭐</span>
+                                <h4 class="font-title font-bold text-lg text-electric">Kartu 2</h4>
+                                <p class="text-xs text-slate-400 mt-2">Klik untuk membalik</p>
+                            </div>
+                            <div class="card-back absolute inset-0 flex flex-col items-center justify-center p-6 bg-ocean-800/90 rounded-2xl border border-electric/40 hidden">
+                                <p class="font-hand text-xl text-electric">"Tidak ada manusia yang sempurna, tetapi selalu ada kesempatan untuk belajar."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="perspective-1000 h-64 cursor-pointer" onclick="flipCard(this)">
+                        <div class="card-inner relative w-full h-full duration-500 transform-style-3d rounded-2xl glass p-6 flex flex-col items-center justify-center text-center glow-box">
+                            <div class="card-front absolute inset-0 flex flex-col items-center justify-center p-6">
+                                <span class="text-4xl mb-3">🌊</span>
+                                <h4 class="font-title font-bold text-lg text-electric">Kartu 3</h4>
+                                <p class="text-xs text-slate-400 mt-2">Klik untuk membalik</p>
+                            </div>
+                            <div class="card-back absolute inset-0 flex flex-col items-center justify-center p-6 bg-ocean-800/90 rounded-2xl border border-electric/40 hidden">
+                                <p class="font-hand text-xl text-electric">"Hal indah tidak selalu harus dimulai dengan cara yang sama."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4 -->
+                    <div class="perspective-1000 h-64 cursor-pointer" onclick="flipCard(this)">
+                        <div class="card-inner relative w-full h-full duration-500 transform-style-3d rounded-2xl glass p-6 flex flex-col items-center justify-center text-center glow-box">
+                            <div class="card-front absolute inset-0 flex flex-col items-center justify-center p-6">
+                                <span class="text-4xl mb-3">💙</span>
+                                <h4 class="font-title font-bold text-lg text-electric">Kartu 4</h4>
+                                <p class="text-xs text-slate-400 mt-2">Klik untuk membalik</p>
+                            </div>
+                            <div class="card-back absolute inset-0 flex flex-col items-center justify-center p-6 bg-ocean-800/90 rounded-2xl border border-electric/40 hidden">
+                                <p class="font-hand text-xl text-electric">"Jika ada kesempatan baru, semoga kali ini kita lebih saling memahami."</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 11. MINI GAME MENCARI MUTIARA & 12. PESAN HEWAN LAUT -->
+        <section class="py-24 px-6 pointer-events-auto">
+            <div class="max-w-3xl mx-auto space-y-12">
+                <div class="text-center">
+                    <span class="text-electric text-sm tracking-widest uppercase font-semibold">Petualangan Dasar Laut</span>
+                    <h3 class="font-title text-3xl sm:text-4xl font-bold mt-2">Temukan Mutiara Bercahaya</h3>
+                    <p class="text-slate-400 text-sm mt-2">Klik kerang di bawah untuk menemukan mutiara rahasia Kazu.</p>
+                </div>
+
+                <!-- Pearl Hunt Box -->
+                <div class="glass rounded-3xl p-8 text-center glow-box relative overflow-hidden">
+                    <div id="pearl-game-area" class="py-8">
+                        <div class="flex justify-center gap-6 mb-6">
+                            <div onclick="findPearl(1)" class="w-16 h-16 rounded-full glass flex items-center justify-center text-2xl cursor-pointer hover:scale-110 transition-all glow-box">🦪</div>
+                            <div onclick="findPearl(2)" class="w-16 h-16 rounded-full glass flex items-center justify-center text-2xl cursor-pointer hover:scale-110 transition-all glow-box">🐚</div>
+                            <div onclick="findPearl(3)" class="w-16 h-16 rounded-full glass flex items-center justify-center text-2xl cursor-pointer hover:scale-110 transition-all glow-box">🦪</div>
+                        </div>
+                        <p id="pearl-hint" class="text-slate-300 font-hand text-2xl">Pilih salah satu kerang untuk menemukan mutiara ajaib...</p>
+                    </div>
+                </div>
+
+                <!-- Animal Messages -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Whale Message -->
+                    <div class="glass rounded-2xl p-6 glow-box">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="text-3xl">🐋</span>
+                            <div>
+                                <h4 class="font-title font-bold text-electric">Pesan Paus Biru</h4>
+                                <span class="text-xs text-slate-400">Penjaga Samudera</span>
+                            </div>
+                        </div>
+                        <p class="font-hand text-xl text-slate-200">"Hai Wilda! Ada seseorang yang masih menyimpan harapan untuk bisa membuat cerita indah bersamamu. Namanya Kazu. Semoga kamu selalu bahagia, apa pun keputusanmu."</p>
+                    </div>
+
+                    <!-- Turtle Message -->
+                    <div class="glass rounded-2xl p-6 glow-box">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="text-3xl">🐢</span>
+                            <div>
+                                <h4 class="font-title font-bold text-electric">Pesan Kura-kura</h4>
+                                <span class="text-xs text-slate-400">Pembawa Surat</span>
+                            </div>
+                        </div>
+                        <p class="font-hand text-xl text-slate-200">"Jangan takut memulai sesuatu yang baik, tetapi jangan pernah memaksakan sesuatu yang belum siap."</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 13. HALAMAN TERAKHIR — THE LAST PEARL -->
+        <section class="py-32 px-6 pointer-events-auto text-center relative">
+            <div class="max-w-3xl mx-auto glass rounded-3xl p-8 sm:p-14 glow-box relative overflow-hidden">
+                <div class="absolute -top-20 -left-20 w-60 h-60 bg-aurora/30 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div id="final-pearl-view">
+                    <span class="text-5xl mb-6 inline-block floating">✨🦪✨</span>
+                    <h3 class="font-title text-3xl sm:text-4xl font-bold mb-4 glow-text">Mutiara Terakhir</h3>
+                    <p class="text-slate-300 text-sm sm:text-base mb-8">Sentuh mutiara raksasa ini untuk membuka lembaran hati yang paling tulus dari Kazu.</p>
+                    <button onclick="revealLastPearl()" class="px-8 py-4 bg-gradient-to-r from-electric to-turquoise text-ocean-900 font-bold rounded-full shadow-lg hover:scale-105 transition-all text-lg">
+                        Buka Mutiara Hati 💙
+                    </button>
+                </div>
+
+                <div id="final-message-view" class="hidden space-y-6 text-left">
+                    <div class="text-center pb-4 border-b border-electric/20">
+                        <h4 class="font-title text-3xl font-bold text-electric glow-text">WILDA...</h4>
+                    </div>
+                    <div class="font-hand text-2xl sm:text-3xl text-slate-200 space-y-4 leading-relaxed">
+                        <p>"Jika lautan memiliki jutaan cahaya, Kazu tetap ingin menemukan satu cahaya yang sama, yaitu kamu.</p>
+                        <p>Kazu tidak meminta semuanya kembali seperti dulu.</p>
+                        <p>Kazu hanya ingin kesempatan untuk memperbaiki kesalahan, belajar lebih dewasa, dan membangun cerita yang lebih baik.</p>
+                        <p>Kazu tahu kata-kata saja tidak cukup. Jika memang ada kesempatan, Kazu ingin membuktikannya melalui tindakan."</p>
+                    </div>
+                    
+                    <div class="pt-8 text-center space-y-6 border-t border-electric/20">
+                        <p class="font-title text-xl font-bold text-electric">"Wilda, bolehkah Kazu mencoba sekali lagi untuk membangun cerita bersama kamu?"</p>
+                        
+                        <div class="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                            <button onclick="selectChoice(1)" class="px-6 py-3 rounded-full bg-electric text-ocean-900 font-bold hover:bg-turquoise transition-all text-sm shadow-lg">
+                                ❤️ Aku mau mencoba lagi.
+                            </button>
+                            <button onclick="selectChoice(2)" class="px-6 py-3 rounded-full glass border border-electric/40 text-electric hover:bg-electric/10 transition-all text-sm">
+                                🌷 Aku butuh waktu.
+                            </button>
+                            <button onclick="selectChoice(3)" class="px-6 py-3 rounded-full glass border border-slate-500/40 text-slate-300 hover:bg-slate-800/50 transition-all text-sm">
+                                🤍 Aku memilih jalan yang berbeda.
+                            </button>
+                        </div>
+
+                        <div id="choice-response" class="hidden mt-6 p-6 rounded-2xl glass border border-electric/40 text-center animate-fade-in">
+                            <!-- Dynamic Response -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="py-12 text-center border-t border-electric/10 pointer-events-auto">
+            <div class="max-w-xl mx-auto space-y-3 px-6">
+                <p class="font-title text-lg text-electric">Made with love and hope by Kazu.</p>
+                <p class="font-hand text-2xl text-slate-300">For Wilda. 💙</p>
+                <p class="text-xs text-slate-500 italic pt-2">"Somewhere in this endless ocean, my favorite light is still you."</p>
+            </div>
+        </footer>
+    </main>
+
+    <!-- PHOTO LIGHTBOX MODAL -->
+    <div id="photo-modal" class="fixed inset-0 z-50 bg-ocean-900/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="relative max-w-2xl w-full glass rounded-3xl p-6 glow-box text-center">
+            <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center text-electric hover:bg-electric/20 font-bold">✕</button>
+            <img id="modal-img" src="" alt="Zoomed Photo" class="w-full max-h-[60vh] object-cover rounded-xl mb-4">
+            <p id="modal-caption" class="font-hand text-2xl text-slate-200"></p>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- BUBBLES GENERATOR ---
+        const bubblesContainer = document.getElementById('bubbles-container');
+        for (let i = 0; i < 25; i++) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            const size = Math.random() * 12 + 4 + 'px';
+            bubble.style.width = size;
+            bubble.style.height = size;
+            bubble.style.left = Math.random() * 100 + 'vw';
+            bubble.style.animationDuration = (Math.random() * 8 + 6) + 's';
+            bubble.style.animationDelay = (Math.random() * 5) + 's';
+            bubblesContainer.appendChild(bubble);
+        }
+
+        // --- AUDIO CONTROLS ---
+        const bgAudio = document.getElementById('bg-audio');
+        const audioToggle = document.getElementById('audio-toggle');
+        const audioIcon = document.getElementById('audio-icon');
+        let isPlaying = false;
+
+        audioToggle.addEventListener('click', () => {
+            if (isPlaying) {
+                bgAudio.pause();
+                isPlaying = false;
+                audioIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>';
+            } else {
+                bgAudio.play().then(() => {
+                    isPlaying = true;
+                    audioIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2 2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>';
+                }).catch(e => console.log("Audio play blocked or missing."));
+            }
+        });
+
+        // --- OPENING CINEMATIC ---
+        const startBtn = document.getElementById('start-btn');
+        const cinematicScreen = document.getElementById('cinematic-screen');
+        const mainContent = document.getElementById('main-content');
+
+        startBtn.addEventListener('click', () => {
+            // Attempt to play audio on user interaction
+            bgAudio.play().then(() => {
+                isPlaying = true;
+                audioIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2 2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>';
+            }).catch(e => console.log("Audio auto-play prevented."));
+
+            gsap.to(cinematicScreen, {
+                opacity: 0,
+                duration: 1.2,
+                onComplete: () => {
+                    cinematicScreen.style.display = 'none';
+                    mainContent.style.opacity = '1';
+                }
+            });
+        });
+
+        // --- LETTER OPENING ---
+        function openLetter() {
+            const cover = document.getElementById('envelope-cover');
+            const content = document.getElementById('letter-content');
+            
+            gsap.to(cover, {
+                opacity: 0,
+                scale: 0.9,
+                duration: 0.5,
+                onComplete: () => {
+                    cover.style.display = 'none';
+                    content.style.display = 'block';
+                    gsap.to(content, { opacity: 1, duration: 0.8 });
+                }
+            });
+        }
+
+        // --- PHOTO LIGHTBOX ---
+        function openModal(src, caption) {
+            const modal = document.getElementById('photo-modal');
+            const modalImg = document.getElementById('modal-img');
+            const modalCap = document.getElementById('modal-caption');
+            
+            modalImg.src = src;
+            modalCap.textContent = caption;
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('photo-modal').classList.add('hidden');
+        }
+
+        // --- QUIZ GAME LOGIC ---
+        const quizData = [
+            {
+                question: "Apa yang membuat sebuah hubungan terasa istimewa?",
+                options: [
+                    "A. Saling jujur dan menerima kekurangan",
+                    "B. Selalu bersama setiap detik",
+                    "C. Hadiah dan kejutan mewah",
+                    "D. Tidak pernah ada masalah"
+                ],
+                answer: 0
+            },
+            {
+                question: "Apa yang paling berharga dari sebuah kenangan?",
+                options: [
+                    "A. Tempatnya yang indah",
+                    "B. Pelajaran dan ketulusan di dalamnya",
+                    "C. Lamanya waktu yang dihabiskan",
+                    "D. Foto-foto yang estetik"
+                ],
+                answer: 1
+            },
+            {
+                question: "Bisakah dua orang membangun cerita lebih baik setelah belajar dari masa lalu?",
+                options: [
+                    "A. Tentu saja, jika ada niat dan ketulusan",
+                    "B. Mustahil terulang kembali",
+                    "C. Tergantung keadaan",
+                    "D. Lebih baik melupakan semuanya"
+                ],
+                answer: 0
+            },
+            {
+                question: "Apa yang paling penting dalam hubungan?",
+                options: [
+                    "A. Saling mendengarkan & memahami",
+                    "B. Siapa yang paling benar",
+                    "C. Mengikuti tren orang lain",
+                    "D. Gengsi yang dijaga"
+                ],
+                answer: 0
+            },
+            {
+                question: "Jika mendapat kesempatan memperbaiki sesuatu, apa yang akan kamu lakukan?",
+                options: [
+                    "A. Memperbaiki komunikasi & saling menjaga",
+                    "B. Mengabaikannya begitu saja",
+                    "C. Menunggu orang lain bertindak",
+                    "D. Mengulangi kesalahan yang sama"
+                ],
+                answer: 0
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            if (currentQuestion < quizData.length) {
+                const q = quizData[currentQuestion];
+                let html = `
+                    <div class="mb-6 flex justify-between items-center text-xs text-electric uppercase tracking-widest font-semibold">
+                        <span>Pertanyaan ${currentQuestion + 1} dari ${quizData.length}</span>
+                        <span>Skor: ${score}</span>
+                    </div>
+                    <h4 class="font-title text-xl sm:text-2xl font-bold mb-6">${q.question}</h4>
+                    <div class="space-y-3">
+                `;
+                q.options.forEach((opt, idx) => {
+                    html += `<button onclick="answerQuiz(${idx})" class="w-full text-left p-4 rounded-xl glass border border-electric/20 hover:border-electric hover:bg-electric/10 transition-all text-sm sm:text-base font-medium">${opt}</button>`;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-8 space-y-4">
+                        <span class="text-5xl">💙</span>
+                        <h4 class="font-title text-2xl font-bold text-electric">Terima Kasih Sudah Menjawab!</h4>
+                        <p class="text-slate-300 font-hand text-2xl">Jawaban apa pun pilihanmu, Kazu sangat menghargai waktu dan ketulusanmu.</p>
+                        <button onclick="resetQuiz()" class="px-6 py-2.5 rounded-full bg-electric text-ocean-900 font-bold text-sm mt-4 hover:bg-turquoise transition-all">Ulangi Kuis</button>
+                    </div>
+                `;
+            }
+        }
+
+        function answerQuiz(selectedIdx) {
+            const q = quizData[currentQuestion];
+            if (selectedIdx === q.answer) {
+                score++;
+            }
+            currentQuestion++;
+            renderQuiz();
+        }
+
+        function resetQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            renderQuiz();
+        }
+
+        renderQuiz();
+
+        // --- CARD FLIP ---
+        function flipCard(cardElement) {
+            const inner = cardElement.querySelector('.card-inner');
+            const front = inner.querySelector('.card-front');
+            const back = inner.querySelector('.card-back');
+            
+            if (front.classList.contains('hidden')) {
+                front.classList.remove('hidden');
+                back.classList.add('hidden');
+            } else {
+                front.classList.add('hidden');
+                back.classList.remove('hidden');
+            }
+        }
+
+        // --- PEARL GAME ---
+        function findPearl(num) {
+            const hint = document.getElementById('pearl-hint');
+            if (num === 2) {
+                hint.innerHTML = "✨ Luar biasa! Kamu menemukan mutiara ajaib!<br><span class='text-electric font-hand text-xl'>'Di lautan yang begitu luas, ada satu hal sederhana yang ingin Kazu temukan: kesempatan untuk memperbaiki cerita.'</span>";
+            } else {
+                hint.innerHTML = "🌊 Hampir tepat! Kerang ini berisi gelembung air. Coba pilih kerang di tengah!";
+            }
+        }
+
+        // --- LAST PEARL REVEAL ---
+        function revealLastPearl() {
+            const pearlView = document.getElementById('final-pearl-view');
+            const msgView = document.getElementById('final-message-view');
+
+            gsap.to(pearlView, {
+                opacity: 0,
+                duration: 0.5,
+                onComplete: () => {
+                    pearlView.style.display = 'none';
+                    msgView.classList.remove('hidden');
+                    gsap.fromTo(msgView, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8 });
+                }
+            });
+        }
+
+        function selectChoice(choiceNum) {
+            const responseDiv = document.getElementById('choice-response');
+            responseDiv.classList.remove('hidden');
+            
+            if (choiceNum === 1) {
+                responseDiv.innerHTML = "<p class='font-hand text-2xl text-electric'>'Terima kasih, Wilda. Semoga kali ini kita bisa saling memahami dan menjaga satu sama lain. ❤️'</p>";
+            } else if (choiceNum === 2) {
+                responseDiv.innerHTML = "<p class='font-hand text-2xl text-electric'>'Tidak apa-apa, Wilda. Kazu akan menghargai waktumu. Tidak perlu terburu-buru.' <span class='block text-sm text-slate-400 mt-2 font-outfit'>Waktu adalah hal berharga, dan Kazu siap menunggu dengan sabar.</span></p>";
+            } else {
+                responseDiv.innerHTML = "<p class='font-hand text-2xl text-electric'>'Terima kasih untuk semua kenangan yang pernah ada. Kazu tetap berharap kamu bahagia.' <span class='block text-sm text-slate-400 mt-2 font-outfit'>Kebahagiaanmu adalah yang utama.</span></p>";
+            }
+
+            gsap.fromTo(responseDiv, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.5 });
+        }
+
+        // --- THREE.JS 3D OCEAN & HEART ANIMATION ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030b1e, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Particle System for 3D Heart & Ocean Flow
+        const particleCount = 1200;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        const colorElectric = new THREE.Color(0x00f0ff);
+        const colorCyan = new THREE.Color(0x00ffff);
+        const colorPurple = new THREE.Color(0x7928ca);
+
+        for (let i = 0; i < particleCount * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 50;
+            positions[i + 1] = (Math.random() - 0.5) * 50;
+            positions[i + 2] = (Math.random() - 0.5) * 50;
+
+            const mixedColor = Math.random() > 0.5 ? colorElectric : colorCyan;
+            colors[i] = mixedColor.r;
+            colors[i + 1] = mixedColor.g;
+            colors[i + 2] = mixedColor.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Particle material
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.35,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particleSystem = new THREE.Points(geometry, particleMaterial);
+        scene.add(particleSystem);
+
+        // Add a glowing 3D Heart wireframe / mesh in center
+        const heartShape = new THREE.Shape();
+        const x = 0, y = 0;
+        heartShape.moveTo(x + 5, y + 5);
+        heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
+        heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
+        heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
+        heartShape.bezierCurveTo(x + 13, y + 15.4, x + 16, y + 11, x + 16, y + 7);
+        heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
+        heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+
+        const extrudeSettings = { depth: 2, bevelEnabled: true, bevelSegments: 5, steps: 2, bevelSize: 1, bevelThickness: 1 };
+        const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+        heartGeometry.center();
+        
+        const heartMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00f0ff,
+            emissive: 0x071638,
+            roughness: 0.2,
+            metalness: 0.8,
+            transparent: true,
+            opacity: 0.25,
+            wireframe: true
+        });
+
+        const heartMesh = new THREE.Mesh(heartGeometry, heartMaterial);
+        heartMesh.scale.set(0.6, 0.6, 0.6);
+        scene.add(heartMesh);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x071638, 2);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0x00f0ff, 3, 50);
+        pointLight.position.set(0, 10, 10);
+        scene.add(pointLight);
+
+        // Mouse interaction for parallax
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        });
+
+        // Animation Loop
+        let clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            let elapsedTime = clock.getElapsedTime();
+
+            particleSystem.rotation.y = elapsedTime * 0.05 + mouseX * 0.5;
+            particleSystem.rotation.x = elapsedTime * 0.03 + mouseY * 0.5;
+
+            heartMesh.rotation.y = elapsedTime * 0.2;
+            heartMesh.rotation.z = Math.sin(elapsedTime * 0.5) * 0.1;
+
+            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 5 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
